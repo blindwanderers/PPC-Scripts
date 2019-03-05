@@ -5,7 +5,8 @@
 */
 
 
-var emails = 'lewis.macgillivray@highspeedtraining.co.uk' // the list of email addresses who would find this useful
+var emails = 'xxxxxxxxxx' // the list of email addresses who would find this useful
+var yourName = 'xxxxxx' // whatever name you use to identify yourself ¯\_(ツ)_/¯
 var costAmount = 10; // basically just here to make the script quicker by filtering out low spend keywords you may have. Don't really need to change this.
 var dateRange = 'LAST_30_DAYS'; // how far back would you like to look?
 var unacceptableCPA = 300; // what cost (or higher) is unnacceptable for a keyword CPA?
@@ -50,8 +51,8 @@ function main() {
   }
   MailApp.sendEmail({
     to: emails, 
-    name: 'Lewy McLewface', 
-    subject: 'Keywords with a CPA of higher than £300 in the last 30 days', 
+    name: yourName, 
+    subject: 'Keywords with an unnacceptable CPA', 
     htmlBody: emailHeader.join('\n') + emailBody.join('\n') + emailFooter.join('\n')
   });
 }
