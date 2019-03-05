@@ -1,0 +1,575 @@
+// Create a report in a Google spreadsheet with performance data by ad component
+// Metrics for each unique headline, description, path, and visible URL are aggregated
+// Use this data to find the best ad components for use in new ads or responsive search ads
+
+function main() {
+  var currentSetting = {};
+  currentSetting.spreadsheetUrl = "https://docs.google.com/spreadsheets/d/xxxxxxxxx"; // the URL of your Google Sheet.
+  currentSetting.time = "LAST_30_DAYS"; // the date range to look back at.
+  currentSetting.accountManagers = "xxxx"; // email addresses for the account.
+  currentSetting.emailAddresses = "xxxx"; // email addresses to send the data to.
+  currentSetting.campaignNameIncludesIgnoreCase = "xxxxxxxx"; // e.g. 'search';
+  var currencyCode = "£";
+  // END OF EDIT-SECTION
+
+  var DEBUG = 1; 
+
+if(currentSetting.campaignNameIncludesIgnoreCase.indexOf("'") != -1) {
+    var campaignSelectorString = 'AND CampaignName CONTAINS_IGNORE_CASE ' + '"' + currentSetting.campaignNameIncludesIgnoreCase + '"';
+  } else {
+    var campaignSelectorString = "AND CampaignName CONTAINS_IGNORE_CASE " + "'" + currentSetting.campaignNameIncludesIgnoreCase + "'";
+  }
+  
+		if(DEBUG == 1) Logger.log("spreadsheet URL: " + currentSetting.spreadsheetUrl);
+		var reportDate = new Date();
+	  var dateForFilename = reportDate.yyyymmdd();
+	  if(currentSetting.spreadsheetUrl.toLowerCase().indexOf("new") != -1)
+	  {
+	    var spreadsheet = SpreadsheetApp.create("Ad Template Report - " + AdWordsApp.currentAccount().getName() + " - " + dateForFilename + " (" + currentSetting.time + ")");
+	    currentSetting.spreadsheetUrl = spreadsheet.getUrl();
+	  } 
+	  var spreadsheet = SpreadsheetApp.openByUrl(currentSetting.spreadsheetUrl);
+	  currentSetting.accountManagersArray = currentSetting.accountManagers.replace(/\s/g, "").split(",");
+	  spreadsheet.addEditors(currentSetting.accountManagersArray);
+	  
+	  //get all sheets except first and delete them and insert new sheets every time to avoid name error
+	  var allSheets = spreadsheet.getSheets();
+	  
+	  for(var i=1,len=allSheets.length;i<len;i++){
+		spreadsheet.deleteSheet(allSheets[i]);
+	  }
+	  
+
+  
+  
+  // EXPANDED TEXT ADS
+  	  var expandedTextAdSheet = spreadsheet.insertSheet("Expanded Text Ads");;
+	  expandedTextAdSheet.clear();
+  	  expandedTextAdSheet.appendRow(["Headline1", "Headline2", "Headline3", "Description", "Description2", "Clicks", "Impressions", "Cost ("+currencyCode+")", "Conversions", "CTR", "Avg. CPC ("+currencyCode+")", "CPA ("+currencyCode+")", "ROAS", "Conv. Value ("+currencyCode+")"]);
+	  expandedTextAdSheet.setFrozenRows(1);
+	  expandedTextAdSheet.getRange("A1:O1").setFontWeight("bold");
+	  var headline1Sheet = spreadsheet.insertSheet("Headline 1");
+	  headline1Sheet.appendRow(["Headline1", "Clicks", "Impressions", "Cost ("+currencyCode+")", "Conversions", "CTR", "Avg. CPC ("+currencyCode+")", "CPA ("+currencyCode+")", "ROAS", "Conv. Value ("+currencyCode+")"]);
+	  headline1Sheet.setFrozenRows(1);
+	  headline1Sheet.getRange("A1:L1").setFontWeight("bold");
+	  var headline2Sheet = spreadsheet.insertSheet("Headline 2");
+	  headline2Sheet.appendRow(["Headline2", "Clicks", "Impressions", "Cost ("+currencyCode+")", "Conversions", "CTR", "Avg. CPC ("+currencyCode+")", "CPA ("+currencyCode+")", "ROAS", "Conv. Value ("+currencyCode+")"]);
+	  headline2Sheet.setFrozenRows(1);
+	  headline2Sheet.getRange("A1:L1").setFontWeight("bold");
+	  /*
+      var headline3Sheet = spreadsheet.insertSheet("Headline 3");
+	  headline3Sheet.appendRow(["Headline3", "Clicks", "Impressions", "Cost ("+currencyCode+")", "Conversions", "CTR", "Avg. CPC ("+currencyCode+")", "CPA ("+currencyCode+")", "ROAS", "Conv. Value ("+currencyCode+")"]);
+	  headline3Sheet.setFrozenRows(1);
+	  headline3Sheet.getRange("A1:L1").setFontWeight("bold");
+	  */
+      var descriptionSheet = spreadsheet.insertSheet("Description");
+	  descriptionSheet.appendRow(["Description", "Clicks", "Impressions", "Cost ("+currencyCode+")", "Conversions", "CTR", "Avg. CPC ("+currencyCode+")", "CPA ("+currencyCode+")", "ROAS", "Conv. Value ("+currencyCode+")"]);
+	  descriptionSheet.setFrozenRows(1);
+	  descriptionSheet.getRange("A1:L1").setFontWeight("bold");
+	  /*
+      var description2Sheet = spreadsheet.insertSheet("Description 2");
+	  description2Sheet.appendRow(["Description2", "Clicks", "Impressions", "Cost ("+currencyCode+")", "Conversions", "CTR", "Avg. CPC ("+currencyCode+")", "CPA ("+currencyCode+")", "ROAS", "Conv. Value ("+currencyCode+")"]);
+	  description2Sheet.setFrozenRows(1);
+	  description2Sheet.getRange("A1:L1").setFontWeight("bold");
+	  */
+      var path1Sheet = spreadsheet.insertSheet("Path1");
+	  path1Sheet.appendRow(["Path1", "Clicks", "Impressions", "Cost ("+currencyCode+")", "Conversions", "CTR", "Avg. CPC ("+currencyCode+")", "CPA ("+currencyCode+")", "ROAS", "Conv. Value ("+currencyCode+")"]);
+	  path1Sheet.setFrozenRows(1);
+	  path1Sheet.getRange("A1:L1").setFontWeight("bold");
+      var path2Sheet = spreadsheet.insertSheet("Path2");
+	  path2Sheet.appendRow(["Path2", "Clicks", "Impressions", "Cost ("+currencyCode+")", "Conversions", "CTR", "Avg. CPC ("+currencyCode+")", "CPA ("+currencyCode+")", "ROAS", "Conv. Value ("+currencyCode+")"]);
+	  path2Sheet.setFrozenRows(1);
+	  path2Sheet.getRange("A1:L1").setFontWeight("bold");
+      var pathSheet = spreadsheet.insertSheet("Path Combinations");
+	  pathSheet.appendRow(["Path1", "Path2", "Clicks", "Impressions", "Cost ("+currencyCode+")", "Conversions", "CTR", "Avg. CPC ("+currencyCode+")", "CPA ("+currencyCode+")", "ROAS", "Conv. Value ("+currencyCode+")"]);
+	  pathSheet.setFrozenRows(1);
+	  pathSheet.getRange("A1:L1").setFontWeight("bold");
+	  
+	  
+	  var expandedTextAdList = new Array();
+	  var expandedTextAdKeys = new Array();
+	  var headline1List = new Array();
+	  var headline2List = new Array();
+	  var headline3List = new Array();
+	  var descriptionList = new Array();
+	  var description2List = new Array();
+	  var path1List = new Array();
+      var path2List = new Array();
+      var pathList = new Array();
+      var pathKeys = new Array();
+	  
+  if(currentSetting.campaignNameIncludesIgnoreCase) {  
+  		//var query = 'SELECT HeadlinePart1, HeadlinePart2, ExpandedTextAdHeadlinePart3, Description, ExpandedTextAdDescription2, Path1, Path2, Clicks, Impressions, Cost, Conversions, ConversionValue ' +
+	    var query = 'SELECT HeadlinePart1, HeadlinePart2, Description, Path1, Path2, Clicks, Impressions, Cost, Conversions, ConversionValue ' +
+	    'FROM AD_PERFORMANCE_REPORT ' +
+	    'WHERE Cost > 0 ' +
+	    'AND AdType = ' + "'EXPANDED_TEXT_AD'" + ' ' +
+        campaignSelectorString + ' ' +
+	    'DURING ' + currentSetting.time;
+  	} else {
+    	//var query = 'SELECT HeadlinePart1, HeadlinePart2, ExpandedTextAdHeadlinePart3, Description, ExpandedTextAdDescription2, Path1, Path2, Clicks, Impressions, Cost, Conversions, ConversionValue ' +
+	    var query = 'SELECT HeadlinePart1, HeadlinePart2, Description, Path1, Path2, Clicks, Impressions, Cost, Conversions, ConversionValue ' +
+	    'FROM AD_PERFORMANCE_REPORT ' +
+	    'WHERE Cost > 0 ' +
+	    'AND AdType = ' + "'EXPANDED_TEXT_AD'" + ' ' +
+	    'DURING ' + currentSetting.time;
+  	}
+	  //var report = AdWordsApp.report(query,{apiVersion:apiVersions.getApiVersion()});
+  var report = AdWordsApp.report(query);
+	  var rows = report.rows();
+	  Logger.log(query);
+	  while(rows.hasNext()) {
+	    var row = rows.next();
+	    var clicks = parseInt(row['Clicks']);
+	    var impressions = parseInt(row['Impressions']);
+	    var cost = parseFloat(row['Cost'].replace(/,/g,""));
+	    var conversions = parseInt(row['Conversions'].replace(/,/g,""));
+	    var conversionValue = parseFloat(row['ConversionValue'].replace(/,/g,""));
+	    var headline1 = row['HeadlinePart1'];
+	    var headline2 = row['HeadlinePart2'];
+        //var headline3 = row['ExpandedTextAdHeadlinePart3'];
+	    var description = row['Description'];
+        //var description2 = row['ExpandedTextAdDescription2'];
+	    var path1 = row['Path1'];
+        var path2 = row['Path2'];
+	    //var adFootPrint = headline1 + "--n--" + headline2 + "--n--" + headline3 + "--n--" + description + "--n--" + description2;
+        var adFootPrint = headline1 + "--n--" + headline2 + "--n--" + "" + "--n--" + description + "--n--" + "";
+        var pathFootPrint = path1 + "--n--" + path2;
+	    
+	    if(!expandedTextAdList[adFootPrint]) {
+	      expandedTextAdList[adFootPrint] = new Object();
+	      expandedTextAdList[adFootPrint].clicks = clicks;
+	      expandedTextAdList[adFootPrint].impressions = impressions;
+	      expandedTextAdList[adFootPrint].cost = cost;
+	      expandedTextAdList[adFootPrint].conversions = conversions;
+	      expandedTextAdList[adFootPrint].conversionValue = conversionValue;
+	      expandedTextAdKeys.push(adFootPrint);
+	    } else {
+	      expandedTextAdList[adFootPrint].clicks += clicks;
+	      expandedTextAdList[adFootPrint].impressions += impressions;
+	      expandedTextAdList[adFootPrint].cost += cost;
+	      expandedTextAdList[adFootPrint].conversions += conversions;
+	      expandedTextAdList[adFootPrint].conversionValue += conversionValue;
+	    }
+	    
+	    if(!headline1List[headline1]) {
+	      headline1List[headline1] = new Object();
+	      headline1List[headline1].clicks = clicks;
+	      headline1List[headline1].impressions = impressions;
+	      headline1List[headline1].cost = cost;
+	      headline1List[headline1].conversions = conversions;
+	      headline1List[headline1].conversionValue = conversionValue;
+	    } else {
+	      headline1List[headline1].clicks += clicks;
+	      headline1List[headline1].impressions += impressions;
+	      headline1List[headline1].cost += cost;
+	      headline1List[headline1].conversions += conversions;
+	      headline1List[headline1].conversionValue += conversionValue;
+	    }
+	    
+	    if(!headline2List[headline2]) {
+	      headline2List[headline2] = new Object();
+	      headline2List[headline2].clicks = clicks;
+	      headline2List[headline2].impressions = impressions;
+	      headline2List[headline2].cost = cost;
+	      headline2List[headline2].conversions = conversions;
+	      headline2List[headline2].conversionValue = conversionValue;
+	    } else {
+	      headline2List[headline2].clicks += clicks;
+	      headline2List[headline2].impressions += impressions;
+	      headline2List[headline2].cost += cost;
+	      headline2List[headline2].conversions += conversions;
+	      headline2List[headline2].conversionValue += conversionValue;
+	    }
+        
+        /*
+        if(!headline3List[headline3]) {
+	      headline3List[headline3] = new Object();
+	      headline3List[headline3].clicks = clicks;
+	      headline3List[headline3].impressions = impressions;
+	      headline3List[headline3].cost = cost;
+	      headline3List[headline3].conversions = conversions;
+	      headline3List[headline3].conversionValue = conversionValue;
+	    } else {
+	      headline3List[headline3].clicks += clicks;
+	      headline3List[headline3].impressions += impressions;
+	      headline3List[headline3].cost += cost;
+	      headline3List[headline3].conversions += conversions;
+	      headline3List[headline3].conversionValue += conversionValue;
+	    }
+	    */
+	    
+	    if(!descriptionList[description]) {
+	      descriptionList[description] = new Object();
+	      descriptionList[description].clicks = clicks;
+	      descriptionList[description].impressions = impressions;
+	      descriptionList[description].cost = cost;
+	      descriptionList[description].conversions = conversions;
+	      descriptionList[description].conversionValue = conversionValue;
+	    } else {
+	      descriptionList[description].clicks += clicks;
+	      descriptionList[description].impressions += impressions;
+	      descriptionList[description].cost += cost;
+	      descriptionList[description].conversions += conversions;
+	      descriptionList[description].conversionValue += conversionValue;
+	    }
+        
+        /*
+        if(!description2List[description2]) {
+	      description2List[description2] = new Object();
+	      description2List[description2].clicks = clicks;
+	      description2List[description2].impressions = impressions;
+	      description2List[description2].cost = cost;
+	      description2List[description2].conversions = conversions;
+	      description2List[description2].conversionValue = conversionValue;
+	    } else {
+	      description2List[description2].clicks += clicks;
+	      description2List[description2].impressions += impressions;
+	      description2List[description2].cost += cost;
+	      description2List[description2].conversions += conversions;
+	      description2List[description2].conversionValue += conversionValue;
+	    }
+	    
+        */
+        
+	    if(!path1List[path1]) {
+	      path1List[path1] = new Object();
+	      path1List[path1].clicks = clicks;
+	      path1List[path1].impressions = impressions;
+	      path1List[path1].cost = cost;
+	      path1List[path1].conversions = conversions;
+	      path1List[path1].conversionValue = conversionValue;
+	    } else {
+	      path1List[path1].clicks += clicks;
+	      path1List[path1].impressions += impressions;
+	      path1List[path1].cost += cost;
+	      path1List[path1].conversions += conversions;
+	      path1List[path1].conversionValue += conversionValue;
+	    }
+        
+        if(!path2List[path2]) {
+	      path2List[path2] = new Object();
+	      path2List[path2].clicks = clicks;
+	      path2List[path2].impressions = impressions;
+	      path2List[path2].cost = cost;
+	      path2List[path2].conversions = conversions;
+	      path2List[path2].conversionValue = conversionValue;
+	    } else {
+	      path2List[path2].clicks += clicks;
+	      path2List[path2].impressions += impressions;
+	      path2List[path2].cost += cost;
+	      path2List[path2].conversions += conversions;
+	      path2List[path2].conversionValue += conversionValue;
+	    }
+        
+        if(!pathList[pathFootPrint]) {
+	      pathList[pathFootPrint] = new Object();
+	      pathList[pathFootPrint].clicks = clicks;
+	      pathList[pathFootPrint].impressions = impressions;
+	      pathList[pathFootPrint].cost = cost;
+	      pathList[pathFootPrint].conversions = conversions;
+	      pathList[pathFootPrint].conversionValue = conversionValue;
+	      pathKeys.push(pathFootPrint);
+	    } else {
+	      pathList[pathFootPrint].clicks += clicks;
+	      pathList[pathFootPrint].impressions += impressions;
+	      pathList[pathFootPrint].cost += cost;
+	      pathList[pathFootPrint].conversions += conversions;
+	      pathList[pathFootPrint].conversionValue += conversionValue;
+	    }
+	  }
+	  
+	  //if(DEBUG == 1) Logger.log(expandedTextAdKeys.length + " Unique Ads Evaluated");
+	  
+	  for(var headline1 in headline1List) {
+	    var stats = headline1List[headline1];
+	    var clicks = stats.clicks;
+	    var impressions = stats.impressions;
+	    var cost = stats.cost;
+	    var conversions = stats.conversions;
+	    var conversionValue = stats.conversionValue;
+	    var ctr = clicks / impressions;
+	    var avgCpc = cost / clicks;
+	    var roas = conversionValue / cost;
+	    var cpa = cost / conversions;
+	    headline1Sheet.appendRow([headline1, clicks, impressions, cost, conversions, ctr, avgCpc, cpa, roas, conversionValue]);
+	  }
+	  
+	  var numRows = headline1Sheet.getDataRange().getNumRows();
+	  headline1Sheet.getRange(2, 2, numRows, 1).setNumberFormat("#,##0");
+	  headline1Sheet.getRange(2, 3, numRows, 1).setNumberFormat("#,##0");
+	  headline1Sheet.getRange(2, 4, numRows, 1).setNumberFormat("#,##0.00");
+	  headline1Sheet.getRange(2, 5, numRows, 1).setNumberFormat("#,##0");
+	  headline1Sheet.getRange(2, 6, numRows, 1).setNumberFormat("0.00%");
+	  headline1Sheet.getRange(2, 7, numRows, 1).setNumberFormat("#,##0.00");
+	  headline1Sheet.getRange(2, 8, numRows, 1).setNumberFormat("#,##0.00");
+	  headline1Sheet.getRange(2, 9, numRows, 1).setNumberFormat("0.00%");
+	  headline1Sheet.getRange(2, 10, numRows, 1).setNumberFormat("#,##0.00");
+	  
+
+	  for(var headline2 in headline2List) {
+	    var stats = headline2List[headline2];
+	    var clicks = stats.clicks;
+	    var impressions = stats.impressions;
+	    var cost = stats.cost;
+	    var conversions = stats.conversions;
+	    var conversionValue = stats.conversionValue;
+	    var ctr = clicks / impressions;
+	    var avgCpc = cost / clicks;
+	    var roas = conversionValue / cost;
+	    var cpa = cost / conversions;
+	    headline2Sheet.appendRow([headline2, clicks, impressions, cost, conversions, ctr, avgCpc, cpa, roas, conversionValue]);
+	  }
+	  
+	  var numRows = headline2Sheet.getDataRange().getNumRows();
+	  headline2Sheet.getRange(2, 2, numRows, 1).setNumberFormat("#,##0");
+	  headline2Sheet.getRange(2, 3, numRows, 1).setNumberFormat("#,##0");
+	  headline2Sheet.getRange(2, 4, numRows, 1).setNumberFormat("#,##0.00");
+	  headline2Sheet.getRange(2, 5, numRows, 1).setNumberFormat("#,##0");
+	  headline2Sheet.getRange(2, 6, numRows, 1).setNumberFormat("0.00%");
+	  headline2Sheet.getRange(2, 7, numRows, 1).setNumberFormat("#,##0.00");
+	  headline2Sheet.getRange(2, 8, numRows, 1).setNumberFormat("#,##0.00");
+	  headline2Sheet.getRange(2, 9, numRows, 1).setNumberFormat("0.00%");
+	  headline2Sheet.getRange(2, 10, numRows, 1).setNumberFormat("#,##0.00");
+	  
+	  /*
+  	for(var headline3 in headline3List) {
+	    var stats = headline3List[headline3];
+	    var clicks = stats.clicks;
+	    var impressions = stats.impressions;
+	    var cost = stats.cost;
+	    var conversions = stats.conversions;
+	    var conversionValue = stats.conversionValue;
+	    var ctr = clicks / impressions;
+	    var avgCpc = cost / clicks;
+	    var roas = conversionValue / cost;
+	    var cpa = cost / conversions;
+	    headline3Sheet.appendRow([headline3, clicks, impressions, cost, conversions, ctr, avgCpc, cpa, roas, conversionValue]);
+	  }
+	  
+	  var numRows = headline3Sheet.getDataRange().getNumRows();
+	  headline3Sheet.getRange(2, 2, numRows, 1).setNumberFormat("#,##0");
+	  headline3Sheet.getRange(2, 3, numRows, 1).setNumberFormat("#,##0");
+	  headline3Sheet.getRange(2, 4, numRows, 1).setNumberFormat("#,##0.00");
+	  headline3Sheet.getRange(2, 5, numRows, 1).setNumberFormat("#,##0");
+	  headline3Sheet.getRange(2, 6, numRows, 1).setNumberFormat("0.00%");
+	  headline3Sheet.getRange(2, 7, numRows, 1).setNumberFormat("#,##0.00");
+	  headline3Sheet.getRange(2, 8, numRows, 1).setNumberFormat("#,##0.00");
+	  headline3Sheet.getRange(2, 9, numRows, 1).setNumberFormat("0.00%");
+	  headline3Sheet.getRange(2, 10, numRows, 1).setNumberFormat("#,##0.00");
+	  */
+  
+  
+	  for(var description in descriptionList) {
+	    var stats = descriptionList[description];
+	    var clicks = stats.clicks;
+	    var impressions = stats.impressions;
+	    var cost = stats.cost;
+	    var conversions = stats.conversions;
+	    var conversionValue = stats.conversionValue;
+	    var ctr = clicks / impressions;
+	    var avgCpc = cost / clicks;
+	    var roas = conversionValue / cost;
+	    var cpa = cost / conversions;
+	    descriptionSheet.appendRow([description, clicks, impressions, cost, conversions, ctr, avgCpc, cpa, roas, conversionValue]);
+	  }
+	  
+	  var numRows = descriptionSheet.getDataRange().getNumRows();
+	  descriptionSheet.getRange(2, 2, numRows, 1).setNumberFormat("#,##0");
+	  descriptionSheet.getRange(2, 3, numRows, 1).setNumberFormat("#,##0");
+	  descriptionSheet.getRange(2, 4, numRows, 1).setNumberFormat("#,##0.00");
+	  descriptionSheet.getRange(2, 5, numRows, 1).setNumberFormat("#,##0");
+	  descriptionSheet.getRange(2, 6, numRows, 1).setNumberFormat("0.00%");
+	  descriptionSheet.getRange(2, 7, numRows, 1).setNumberFormat("#,##0.00");
+	  descriptionSheet.getRange(2, 8, numRows, 1).setNumberFormat("#,##0.00");
+	  descriptionSheet.getRange(2, 9, numRows, 1).setNumberFormat("0.00%");
+	  descriptionSheet.getRange(2, 10, numRows, 1).setNumberFormat("#,##0.00");
+	  
+  /*
+  	for(var description2 in description2List) {
+	    var stats = description2List[description2];
+	    var clicks = stats.clicks;
+	    var impressions = stats.impressions;
+	    var cost = stats.cost;
+	    var conversions = stats.conversions;
+	    var conversionValue = stats.conversionValue;
+	    var ctr = clicks / impressions;
+	    var avgCpc = cost / clicks;
+	    var roas = conversionValue / cost;
+	    var cpa = cost / conversions;
+	    description2Sheet.appendRow([description2, clicks, impressions, cost, conversions, ctr, avgCpc, cpa, roas, conversionValue]);
+	  }
+	  
+	  var numRows = description2Sheet.getDataRange().getNumRows();
+	  description2Sheet.getRange(2, 2, numRows, 1).setNumberFormat("#,##0");
+	  description2Sheet.getRange(2, 3, numRows, 1).setNumberFormat("#,##0");
+	  description2Sheet.getRange(2, 4, numRows, 1).setNumberFormat("#,##0.00");
+	  description2Sheet.getRange(2, 5, numRows, 1).setNumberFormat("#,##0");
+	  description2Sheet.getRange(2, 6, numRows, 1).setNumberFormat("0.00%");
+	  description2Sheet.getRange(2, 7, numRows, 1).setNumberFormat("#,##0.00");
+	  description2Sheet.getRange(2, 8, numRows, 1).setNumberFormat("#,##0.00");
+	  description2Sheet.getRange(2, 9, numRows, 1).setNumberFormat("0.00%");
+	  description2Sheet.getRange(2, 10, numRows, 1).setNumberFormat("#,##0.00");
+  */
+  
+  
+	  for(var path in path1List) {
+	    var stats = path1List[path];
+	    var clicks = stats.clicks;
+	    var impressions = stats.impressions;
+	    var cost = stats.cost;
+	    var conversions = stats.conversions;
+	    var conversionValue = stats.conversionValue;
+	    var ctr = clicks / impressions;
+	    var avgCpc = cost / clicks;
+	    var roas = conversionValue / cost;
+	    var cpa = cost / conversions;
+	    path1Sheet.appendRow([path, clicks, impressions, cost, conversions, ctr, avgCpc, cpa, roas, conversionValue]);
+	  }
+	  
+	  var numRows = path1Sheet.getDataRange().getNumRows();
+	  path1Sheet.getRange(2, 2, numRows, 1).setNumberFormat("#,##0");
+	  path1Sheet.getRange(2, 3, numRows, 1).setNumberFormat("#,##0");
+	  path1Sheet.getRange(2, 4, numRows, 1).setNumberFormat("#,##0.00");
+	  path1Sheet.getRange(2, 5, numRows, 1).setNumberFormat("#,##0");
+	  path1Sheet.getRange(2, 6, numRows, 1).setNumberFormat("0.00%");
+	  path1Sheet.getRange(2, 7, numRows, 1).setNumberFormat("#,##0.00");
+	  path1Sheet.getRange(2, 8, numRows, 1).setNumberFormat("#,##0.00");
+	  path1Sheet.getRange(2, 9, numRows, 1).setNumberFormat("0.00%");
+	  path1Sheet.getRange(2, 10, numRows, 1).setNumberFormat("#,##0.00");
+  
+  
+     for(var path in path2List) {
+	    var stats = path2List[path];
+	    var clicks = stats.clicks;
+	    var impressions = stats.impressions;
+	    var cost = stats.cost;
+	    var conversions = stats.conversions;
+	    var conversionValue = stats.conversionValue;
+	    var ctr = clicks / impressions;
+	    var avgCpc = cost / clicks;
+	    var roas = conversionValue / cost;
+	    var cpa = cost / conversions;
+	    path2Sheet.appendRow([path, clicks, impressions, cost, conversions, ctr, avgCpc, cpa, roas, conversionValue]);
+	  }
+	  
+	  var numRows = path2Sheet.getDataRange().getNumRows();
+	  path2Sheet.getRange(2, 2, numRows, 1).setNumberFormat("#,##0");
+	  path2Sheet.getRange(2, 3, numRows, 1).setNumberFormat("#,##0");
+	  path2Sheet.getRange(2, 4, numRows, 1).setNumberFormat("#,##0.00");
+	  path2Sheet.getRange(2, 5, numRows, 1).setNumberFormat("#,##0");
+	  path2Sheet.getRange(2, 6, numRows, 1).setNumberFormat("0.00%");
+	  path2Sheet.getRange(2, 7, numRows, 1).setNumberFormat("#,##0.00");
+	  path2Sheet.getRange(2, 8, numRows, 1).setNumberFormat("#,##0.00");
+	  path2Sheet.getRange(2, 9, numRows, 1).setNumberFormat("0.00%");
+	  path2Sheet.getRange(2, 10, numRows, 1).setNumberFormat("#,##0.00");
+	  
+	  
+	  for(var i=0; i < expandedTextAdKeys.length; i++) {
+	   
+	    var adKey = expandedTextAdKeys[i];
+	    var ad = expandedTextAdList[adKey];
+	    var adParts = adKey.split("--n--");
+	    var headline1 = adParts[0];
+	    var headline2 = adParts[1];
+        var headline3 = adParts[2]
+	    var description = adParts[3];
+        var description2 = adParts[4];
+
+	    var clicks = ad.clicks;
+	    var impressions = ad.impressions;
+	    var cost = ad.cost;
+	    var conversions = ad.conversions;
+	    var conversionValue = ad.conversionValue;
+	    if(conversions) {
+	      var roas = conversionValue / cost;
+	      var cpa = cost / conversions;
+	    } else {
+	      var roas = 0;
+	      var cpa = 0;
+	    }
+	    var ctr = clicks / impressions;
+	    var avgCpc = cost/ clicks;
+	    //if(DEBUG == 1) Logger.log(adKey + " " + clicks + " " + impressions + " " + cost);
+	    if(DEBUG == 1) Logger.log(adKey + " clicks: " + clicks);
+	    expandedTextAdSheet.appendRow([headline1, headline2, headline3, description, description2, clicks, impressions, cost, conversions, ctr, avgCpc, cpa, roas, conversionValue]);
+	    
+	  }
+	  
+	  var numRows = expandedTextAdSheet.getDataRange().getNumRows();
+	  expandedTextAdSheet.getRange(2, 6, numRows, 1).setNumberFormat("#,##0");
+	  expandedTextAdSheet.getRange(2, 7, numRows, 1).setNumberFormat("#,##0");
+	  expandedTextAdSheet.getRange(2, 8, numRows, 1).setNumberFormat("#,##0.00");
+	  expandedTextAdSheet.getRange(2, 9, numRows, 1).setNumberFormat("#,##0");
+	  expandedTextAdSheet.getRange(2, 10, numRows, 1).setNumberFormat("0.00%");
+	  expandedTextAdSheet.getRange(2, 11, numRows, 1).setNumberFormat("#,##0.00");
+	  expandedTextAdSheet.getRange(2, 12, numRows, 1).setNumberFormat("#,##0.00");
+	  expandedTextAdSheet.getRange(2, 13, numRows, 1).setNumberFormat("0.00%");
+	  expandedTextAdSheet.getRange(2, 14, numRows, 1).setNumberFormat("#,##0.00");
+  
+  
+  for(var i=0; i < pathKeys.length; i++) {
+	   
+	    var pathKey = pathKeys[i];
+        var unit = pathList[pathKey];
+        var parts = pathKey.split("--n--");
+	    var path1 = parts[0];
+	    var path2 = parts[1];
+
+	    var clicks = unit.clicks;
+	    var impressions = unit.impressions;
+	    var cost = unit.cost;
+	    var conversions = unit.conversions;
+	    var conversionValue = unit.conversionValue;
+	    if(conversions) {
+	      var roas = conversionValue / cost;
+	      var cpa = cost / conversions;
+	    } else {
+	      var roas = 0;
+	      var cpa = 0;
+	    }
+	    var ctr = clicks / impressions;
+	    var avgCpc = cost/ clicks;
+	    //if(DEBUG == 1) Logger.log(pathKey + " " + clicks + " " + impressions + " " + cost);
+	    if(DEBUG == 1) Logger.log(pathKey + " clicks: " + clicks);
+	    pathSheet.appendRow([path1, path2, clicks, impressions, cost, conversions, ctr, avgCpc, cpa, roas, conversionValue]);
+	    
+	  }
+	  
+	  var numRows = pathSheet.getDataRange().getNumRows();
+	  pathSheet.getRange(2, 3, numRows, 1).setNumberFormat("#,##0");
+	  pathSheet.getRange(2, 4, numRows, 1).setNumberFormat("#,##0");
+	  pathSheet.getRange(2, 5, numRows, 1).setNumberFormat("#,##0.00");
+	  pathSheet.getRange(2, 6, numRows, 1).setNumberFormat("#,##0");
+	  pathSheet.getRange(2, 7, numRows, 1).setNumberFormat("0.00%");
+	  pathSheet.getRange(2, 8, numRows, 1).setNumberFormat("#,##0.00");
+	  pathSheet.getRange(2, 9, numRows, 1).setNumberFormat("#,##0.00");
+	  pathSheet.getRange(2, 10, numRows, 1).setNumberFormat("0.00%");
+	  pathSheet.getRange(2, 11, numRows, 1).setNumberFormat("#,##0.00");
+	  
+  // EMAIL
+	  var remainingQuota = MailApp.getRemainingDailyQuota();
+  currentSetting.emailAddressesArray = currentSetting.emailAddresses.replace(/\s/g, "").split(",");
+  if(remainingQuota > currentSetting.emailAddressesArray.length) {
+    var subject = "Ad Template Report for " + AdWordsApp.currentAccount().getName() + " is ready";
+    var body = "Visit this link for the ad template report for CID " + AdWordsApp.currentAccount().getCustomerId() + ": <a href=\""+ currentSetting.spreadsheetUrl+"\" target=\"_blank\">link</a>";
+    MailApp.sendEmail({
+    to:currentSetting.emailAddresses, 
+    subject: subject,
+    htmlBody: body
+  });
+  }
+	  currentSetting.notes = "Download Report: : <a href=\""+ currentSetting.spreadsheetUrl+"\" target=\"_blank\">link</a>";
+	  
+  return(currentSetting.notes);
+}
+
+
+
+
+Date.prototype.yyyymmdd = function() {
+  var yyyy = this.getFullYear().toString();
+  var mm = (this.getMonth()+1).toString(); // getMonth() is zero-based
+  var dd  = this.getDate().toString();
+  return yyyy + (mm[1]?mm:"0"+mm[0]) + (dd[1]?dd:"0"+dd[0]); // padding
+};
