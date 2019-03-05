@@ -1,0 +1,32 @@
+var campaignName = 'xxxxxxxx'; // Choose the campaign you wish to look at
+
+function main() {
+  var adGroupNameIterator = AdWordsApp.adGroups()
+  .withCondition('CampaignName CONTAINS_IGNORE_CASE "' +campaignName+ '"')
+  .withCondition("Status = ENABLED")
+  .get();
+  
+  Logger.log('Total number of ad groups within the campaign = ' + adGroupNameIterator.totalNumEntities());
+  
+  
+  
+  while (adGroupNameIterator.hasNext()) {
+    
+    var adGroups = adGroupNameIterator.next();
+    
+    var adText = adGroups.ads()
+    .withCondition('Status = ENABLED')
+    .withCondition('ApprovalStatus = APPROVED')
+    .withCondition('Type=EXPANDED_TEXT_AD')
+    .get();
+    
+    if (adText.totalNumEntities() !== 3) {
+    Logger.log('Total number of ads within the ' +adGroups + ' equals: ' + adText.totalNumEntities());
+    };
+    
+    
+    	
+          
+        
+  }
+}
