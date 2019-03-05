@@ -1,0 +1,51 @@
+/*
+*
+* This script will look at display activity and exclude any placements that have a suspiciously high CTR (most likely due to fake traffic)
+*
+*/
+
+var impressionsMinimum = 8; // minimum number of impressions a placement has to have before being considered suspicious.
+var maxCtr = 0.50; // the CTR (or higher) that a placement has to have to be excluded - note this is a percentage, i.e. 0.50 = 50%.
+var conversionsLimit = 0; // keep this value as 0 to only look at placements without a recorded conversion.
+var viewThroughConversionsLimit = 0; // same as above.
+var timePeriod = "LAST_7_DAYS"; // the time period to look at for the data.
+var adGroupNames = '' // leave blank if you just want to look at all ad groups.
+
+function main() {
+  
+  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  var displayPlacements = AdWordsApp.display().placements()
+  .withCondition("Ctr > "+maxCtr)
+  .withCondition("Impressions >="+impressionsMinimum)
+  .withCondition("Conversions <="+conversionsLimit)
+  .withCondition("ViewThroughConversions <="+viewThroughConversionsLimit)
+  .withCondition("CampaignStatus != REMOVED")
+  .withCondition("CampaignStatus != PAUSED")
+  .withCondition("AdGroupName CONTAINS_IGNORE_CASE '" + adGroupNames + "'")
+  .forDateRange(timePeriod)
+  .get();
+  
+  var placementUrl;
+  var placement;
+  
+  while (displayPlacements.hasNext()) {
+    placement = displayPlacements.next();
+    
+    placementUrl = placement.getUrl();
+    Logger.log(placementUrl)
+
+    var campaign = placement.getCampaign();
+    var adGroup = placement.getAdGroup();
+    if (placement != 'anonymous.google') {
+      var exclude = adGroup.display().newPlacementBuilder().withUrl(placementUrl).exclude();
+      if (!exclude.isSuccessful()) {
+        Logger.log("The placement " + placementUrl + " could not be excluded " + campaign + ".")
+      } else {
+        Logger.log("The placement " + placementUrl + " WAS excluded from " + campaign + ".")
+      }
+    } else {
+      Logger.log("Don't exclude anonymous.");
+    }
+  }
+}
