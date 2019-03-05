@@ -1,0 +1,57 @@
+/*
+*
+* This script will email you every 30 days with a list of the keywords with a cost per conversion of higher than the amount you deem acceptable.
+*
+*/
+
+
+var emails = 'lewis.macgillivray@highspeedtraining.co.uk' // the list of email addresses who would find this useful
+var costAmount = 10; // basically just here to make the script quicker by filtering out low spend keywords you may have. Don't really need to change this.
+var dateRange = 'LAST_30_DAYS'; // how far back would you like to look?
+var unacceptableCPA = 300; // what cost (or higher) is unnacceptable for a keyword CPA?
+
+
+function main() {
+  
+  var emailHeader = [];
+  var emailFooter = [];
+  var emailBody = [];
+  
+  
+  var keywordSelector = AdsApp.keywords()
+  .withCondition("Cost > " + costAmount)
+  .forDateRange(dateRange)
+  .get();
+
+  while (keywordSelector.hasNext()) {
+    var keywordList = keywordSelector.next();
+    var keywordText = keywordList.getText();
+
+    var keywordStats = keywordList.getStatsFor(dateRange)
+    var keywordCost = keywordStats.getCost();
+    var keywordConv = keywordStats.getConversions();
+    
+    if (keywordConv >= 1) {
+      var costPerConv = Math.round((keywordCost / keywordConv)*100)/100;
+    } else {
+      var costPerConv = keywordCost;
+    }
+    
+    if (costPerConv > unacceptableCPA) {
+    	Logger.log(keywordText + ' cost per conversion is: ' + costPerConv);
+      	emailHeader.push('<html>','<head></head>','<body>');
+  		emailFooter.push('</body>','</html>');
+  		emailBody.push('<strong>' + keywordText + "</strong><br />Cost per conversion: £" + costPerConv + '<br /><br />');
+    }
+  
+  
+  
+  
+  }
+  MailApp.sendEmail({
+    to: emails, 
+    name: 'Lewy McLewface', 
+    subject: 'Keywords with a CPA of higher than £300 in the last 30 days', 
+    htmlBody: emailHeader.join('\n') + emailBody.join('\n') + emailFooter.join('\n')
+  });
+}
