@@ -1,6 +1,6 @@
 /*
 *
-* Increase the bids of keywords dependent on their performance.
+* Decrease the bids of keywords dependent on their performance.
 *
 */
 
