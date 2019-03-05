@@ -1,0 +1,45 @@
+var clickAmount = '2'; // Minimum number of clicks needed to be considered.
+var costAmount = '5'; // Maximum amount of spend needed to be considered.
+var conversionAmount = '1'; // Minimum number of conversions needed to be considered
+var percentageChange = 1.10; // The amount you wish the bid to be changed by (<1 is a reduction, >1 is an increase)
+var excludeCampaign = 'HST-001'; // Any campaigns you wish to not be included (probably the brand campaign)
+var dateRange = 'LAST_7_DAYS'; // How far back would you like to look?
+var costPerConversionTarget = 15; // What is the highest cost per conversion you'd like to increase a bid on a keyword for
+
+
+function main() {
+  var keywordSelect = AdWordsApp.keywords()
+  .withCondition('Clicks >= "' +clickAmount + '"')
+  .withCondition('Cost >= "' +costAmount + '"')
+  .withCondition('Conversions >= "' +conversionAmount + '"')
+  .withCondition('CampaignName DOES_NOT_CONTAIN "' +excludeCampaign + '"')
+  .forDateRange(dateRange)
+  .orderBy("Cost")
+  .get();
+
+ Logger.log('Number of high performing keywords: ' + keywordSelect.totalNumEntities());
+  while (keywordSelect.hasNext()) {
+    var keywordboi = keywordSelect.next();
+    var kiki = keywordboi.getStatsFor(dateRange).getCost();
+    var coco = keywordboi.getStatsFor(dateRange).getConversions();
+    var costPerConversion = kiki / coco;
+
+    if (costPerConversion < costPerConversionTarget) {
+        var keywordCpc = keywordboi.bidding().getCpc();
+
+        Logger.log('The keyword bids for ' + keywordboi.getText() + ' is currently: ' +keywordCpc);
+    
+        if (keywordCpc < 9) {
+            var newBid = keywordCpc * percentageChange;
+        } else {
+            var newBid = keywordCpc
+        };
+        Logger.log('The keyword bids for ' +keywordboi.getText() + ' is NOW AFTER BID CHANGES: ' +newBid);
+  
+        keywordboi.bidding().setCpc(newBid);
+    } else {
+        null;
+    };
+  };
+
+};
