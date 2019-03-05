@@ -9,7 +9,7 @@ var clickAmount = '1';  // Minimum number of clicks needed to be considered.
 var costAmount = '12'; // Minimum amount of spend needed to be considered.
 var conversionAmount = '1'; // Minimum number of conversions needed to be considered
 var percentageChange = 1.10; // The amount you wish the bid to be changed by (<1 is a reduction, >1 is an increase)
-var excludeCampaign = 'HST-001' // Any campaigns you wish to exclude (probably the brand campaign)
+var excludeCampaign = 'xxxxxxxxxx' // Any campaigns you wish to exclude (probably the brand campaign)
 
 
 function main() {
