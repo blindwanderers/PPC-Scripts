@@ -1,0 +1,104 @@
+/*
+*
+* Script will pull the negative keywords of a negative keyword list and export to a Google sheet.
+*
+* Script will then do the same with the exact match keywords in your account.
+*
+* You can then use this information to deal with any negative keyword conflicts.
+*
+*/
+
+var negKeywordListInclusion = "business" // Which negative keyword lists would you like to include?
+var campaignInclusion = "HST-5" // Which campaigns exact match keywords would you like to include?
+var SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/xxxxxxxxxxxxx'; // The target Google Sheets document.
+var SHEET_NAME = 'Sheet1'; // The targeted sheet within the document, i.e. sheet 1.
+
+
+
+var array1 = []; 
+var array2 = [];
+
+function main() {
+ Logger.log("Thanks for using my script m8"); 
+}
+
+function nah() {
+  var negativeKeywordLists =
+    AdsApp.negativeKeywordLists()
+    .withCondition('Status = ACTIVE')
+    .withCondition('Name CONTAINS_IGNORE_CASE ' + negKeywordListInclusion + '')
+    .get();
+  
+  
+
+  while (negativeKeywordLists.hasNext()) {
+    var negativeKeywordList = negativeKeywordLists.next();
+
+    var negativeListName = negativeKeywordList.getName();
+        
+    var list = negativeKeywordList.negativeKeywords()
+    	.withCondition("KeywordMatchType = EXACT")
+    	.get();
+  		}
+  
+  
+  		
+    	while (list.hasNext()) {
+      		var longList = list.next();
+      		
+      		var keywordText = longList.getText();
+          	array1.push(keywordText);	
+            //Logger.log(array1);
+          
+  
+  			}
+}
+  
+function yea() {
+  var keywords = AdsApp.keywords()
+  	.withCondition("KeywordMatchType = EXACT")
+  	.withCondition("Status = ENABLED")
+  	.withCondition("AdGroupStatus = ENABLED")
+  	.withCondition('CampaignName CONTAINS_IGNORE_CASE "' + campaignInclusion + '"')
+  	.get();	
+  
+ 		if(keywords.hasNext()) {
+    	while (keywords.hasNext()) {
+    	  	var keywordIterator = keywords.next();
+          	var keywordo = keywordIterator.getText(); // KEYWORDO ISN'T PULLING THE KEYWORDS YOU WANT THROUGH. WHY THO?
+            array2.push(keywordo);	
+            //Logger.log(array2);
+          		
+          	
+  	}
+  }
+}
+
+function getSpreadsheet() {
+	function clearSheetData() {
+  		
+  		var ss = SpreadsheetApp.openByUrl(SPREADSHEET_URL);
+  		var sheet = ss.getSheetByName(SHEET_NAME);
+  		sheet.clearContents();
+		}
+  
+  	function appendARow() {
+  		
+  		var ss = SpreadsheetApp.openByUrl(SPREADSHEET_URL);
+  		var sheet = ss.getSheetByName(SHEET_NAME);
+      
+  		
+      sheet.appendRow(array1);
+        
+      sheet.appendRow(array2);
+}
+  clearSheetData();
+  
+  appendARow();
+} 
+
+nah();
+
+yea();
+
+getSpreadsheet();
