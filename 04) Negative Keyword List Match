@@ -22,7 +22,7 @@ function main() {
  Logger.log("Thanks for using my script m8"); 
 }
 
-function nah() {
+function getNegList() {
   var negativeKeywordLists =
     AdsApp.negativeKeywordLists()
     .withCondition('Status = ACTIVE')
@@ -54,7 +54,7 @@ function nah() {
   			}
 }
   
-function yea() {
+function getExactMatch() {
   var keywords = AdsApp.keywords()
   	.withCondition("KeywordMatchType = EXACT")
   	.withCondition("Status = ENABLED")
@@ -97,8 +97,8 @@ function getSpreadsheet() {
   appendARow();
 } 
 
-nah();
+getNegList();
 
-yea();
+function getExactMatch();
 
 getSpreadsheet();
