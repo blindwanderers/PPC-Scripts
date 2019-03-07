@@ -9,7 +9,7 @@
 */
 
 var negKeywordListInclusion = "business" // Which negative keyword lists would you like to include?
-var campaignInclusion = "HST-5" // Which campaigns exact match keywords would you like to include?
+var campaignInclusion = "xxxxxx" // Which campaigns exact match keywords would you like to include?
 var SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/xxxxxxxxxxxxx'; // The target Google Sheets document.
 var SHEET_NAME = 'Sheet1'; // The targeted sheet within the document, i.e. sheet 1.
 
