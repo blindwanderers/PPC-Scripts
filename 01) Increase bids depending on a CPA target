@@ -4,7 +4,8 @@ var conversionAmount = '1'; // Minimum number of conversions needed to be consid
 var percentageChange = 1.10; // The amount you wish the bid to be changed by (<1 is a reduction, >1 is an increase)
 var excludeCampaign = 'xxxxx'; // Any campaigns you wish to not be included (probably the brand campaign)
 var dateRange = 'LAST_7_DAYS'; // How far back would you like to look?
-var costPerConversionTarget = 15; // What is the highest cost per conversion you'd like to increase a bid on a keyword for
+var costPerConversionTarget = 15; // What is the highest cost per conversion you'd like to increase a bid on a keyword for?
+var limit = 9; // the maximum bid before you are not willing to increase the bid further
 
 
 function main() {
@@ -20,16 +21,16 @@ function main() {
  Logger.log('Number of high performing keywords: ' + keywordSelect.totalNumEntities());
   while (keywordSelect.hasNext()) {
     var keywordboi = keywordSelect.next();
-    var kiki = keywordboi.getStatsFor(dateRange).getCost();
-    var coco = keywordboi.getStatsFor(dateRange).getConversions();
-    var costPerConversion = kiki / coco;
+    var keyCost = keywordboi.getStatsFor(dateRange).getCost();
+    var keyConv = keywordboi.getStatsFor(dateRange).getConversions();
+    var costPerConversion = keyCost / keyConv;
 
     if (costPerConversion < costPerConversionTarget) {
         var keywordCpc = keywordboi.bidding().getCpc();
 
         Logger.log('The keyword bids for ' + keywordboi.getText() + ' is currently: ' +keywordCpc);
     
-        if (keywordCpc < 9) {
+        if (keywordCpc < limit) {
             var newBid = keywordCpc * percentageChange;
         } else {
             var newBid = keywordCpc
