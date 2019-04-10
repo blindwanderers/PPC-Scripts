@@ -1,0 +1,29 @@
+function main() {
+
+  // ~~~~~~~~~~~~~~~~~ GET THE AD GROUPS ~~~~~~~~~~~~~~~~~~~~~ //  
+  
+  var adGroupSelect = BingAdsApp.adGroups() // change this to AdsApp.adGroups() if on Google Ads
+  .withCondition('Status = ENABLED')
+  .withCondition('CampaignStatus = ENABLED')
+  .get();
+  
+  while (adGroupSelect.hasNext()) {
+    var adGroupIterator = adGroupSelect.next();
+    var groupName = adGroupIterator.getName();
+    
+  // ~~~~~~~~~~~~~~~~~~~~ GET THE KEYWORDS IN THE AD GROUP ~~~~~~~~~~~~~~~~~~~~~~~~ //  
+  
+    var groupKeywords = adGroupIterator.keywords()
+    .withCondition('Status = ENABLED')
+    .get();
+
+  // ~~~~~~~~~~~~~~ RETURN THE AD GROUPS WITH NO ACTIVE KEYWORDS ~~~~~~~~~~~~~~~~~~ //
+
+    var kwIter = groupKeywords.hasNext();
+    if(!kwIter) {
+      Logger.log(groupName + '---' + adGroupIterator.isEnabled());
+      adGroupIterator.pause();
+      Logger.log(groupName + '---' + adGroupIterator.isEnabled());
+    }
+  }
+}
