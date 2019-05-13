@@ -15,7 +15,7 @@ var excludeCampaign = 'xxxxxxxxxx' // Any campaigns you wish to exclude (probabl
 function main() {
   var keywordSelect = AdWordsApp.keywords()
   .withCondition('Clicks >= "' +clickAmount + '"')
-  .withCondition('Cost > "' +costAmount + '"')
+  .withCondition('Cost = "' +costAmount + '"')
   .withCondition('Conversions < "' +conversionAmount + '"')
   .withCondition('CampaignName DOES_NOT_CONTAIN "' +excludeCampaign + '"')
   .forDateRange('YESTERDAY')
