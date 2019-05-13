@@ -10,13 +10,14 @@ var costAmount = '30'; // Minimum amount of spend needed to be considered.
 var conversionAmount = '0'; // Minimum number of conversions needed to be considered
 var percentageChange = 0.90; // The amount you wish the bid to be changed by (<1 is a reduction, >1 is an increase)
 var excludeCampaign = 'xxxxxxxxxx' // Any campaigns you wish to exclude (probably the brand campaign)
+var dateRange = 'LAST_7_DAYS' // The date range you wish to look back on
 
 
 function main() {
   var keywordSelect = AdWordsApp.keywords()
   .withCondition('Clicks >= "' +clickAmount + '"')
   .withCondition('Cost = "' +costAmount + '"')
-  .withCondition('Conversions < "' +conversionAmount + '"')
+  .withCondition('Conversions = "' +conversionAmount + '"')
   .withCondition('CampaignName DOES_NOT_CONTAIN "' +excludeCampaign + '"')
   .forDateRange('YESTERDAY')
   .orderBy("Cost")
@@ -24,17 +25,19 @@ function main() {
 
  Logger.log('Number of over £' + costAmount + ' keywords: ' + keywordSelect.totalNumEntities());
   while (keywordSelect.hasNext()) {
-    var keywordboi = keywordSelect.next();
+    var keywords = keywordSelect.next();
     
-    var keywordCpc = keywordboi.bidding().getCpc();
+    var keywordCpc = keywords.bidding().getCpc();
+    var keywordConv = keywords.getStatsFor(dateRange).getConversions();
+    Logger.log(keywordConv);
 
-    Logger.log('The keyword bids for ' + keywordboi.getText() + ' is currently: £' + keywordCpc);
+    Logger.log('The keyword bids for ' + keywords.getText() + ' is currently: £' + keywordCpc);
     
     var newBid = keywordCpc * percentageChange;
   
-    Logger.log('The keyword bids for ' + keywordboi.getText() + ' is NOW AFTER CHANGES: £' + newBid);
+    Logger.log('The keyword bids for ' + keywords.getText() + ' is NOW AFTER CHANGES: £' + newBid);
     
-    keywordboi.bidding().setCpc(newBid)
+    keywords.bidding().setCpc(newBid)
   };
 
 };
