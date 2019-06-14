@@ -1,0 +1,43 @@
+function main() {
+
+  // Choose where you want the report to go in sheets
+  
+  var spreadsheetURL = ""; //enter google sheets url here
+  var sheetName = ''; //enter the google sheets sheet name you want the data to go to, like 'Sheet 1'
+  
+  var spreadsheet = SpreadsheetApp.openByUrl(spreadsheetURL);
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  
+  // Choose your date range and update automatically. This gives you the date range of yesterday until the start of the month  
+  
+  var MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
+  var now = new Date();
+  var firstDay = new Date(now.getFullYear(), now.getMonth() -1, 1); // return first day of the month. To change the lookback period, change the final 2 digits (-1, 1)
+  var yesterday = new Date(now.getTime() - MILLIS_PER_DAY);
+  var timeZone = AdWordsApp.currentAccount().getTimeZone();
+  var start = Utilities.formatDate(firstDay, timeZone, 'yyyyMMdd');
+  var end = Utilities.formatDate(yesterday, timeZone, 'yyyyMMdd');
+  Logger.log('The date range is ' + start + ' until ' + end + '.');
+ 
+  // Choose your column variables and export them
+  // Be aware that some of the selections below could be deprecated soon (AveragePosition)
+  
+  var report = AdsApp.report('SELECT Device, MonthOfYear, Clicks, Impressions, AveragePosition, Cost, Conversions, ViewThroughConversions ' + 'FROM ACCOUNT_PERFORMANCE_REPORT ' + 'DURING ' + start + ',' + end);
+   
+  report.exportToSheet(spreadsheet.getActiveSheet());
+  var spreadsheetLocation = spreadsheet.getUrl()
+  
+  Logger.log("Report available at " + spreadsheetLocation);
+  
+  // send an email. This can be automated by choosing a script run frequency within the Google Ads interface.
+  
+  MailApp.sendEmail({
+    
+    to: '', //enter your email address
+    subject: '', //enter the subject line
+    body: 'This report will update every day, date range for today is... \r' + start + ' until ' + end + "\r" +spreadsheetLocation
+  
+  })
+  
+
+}
