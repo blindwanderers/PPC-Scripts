@@ -1,0 +1,77 @@
+var minimumClicksRequired = 10; // Option to only look at keywords with a certain number of clicks yesterday
+var emailAddress = '' // Choose the email address to send the results to
+
+function main() {
+  
+  // Set the time frame for 2 days ago to yesterday ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  var MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
+  var now = new Date();
+  var dayBeforeYesterday = new Date(now.getTime() - (MILLIS_PER_DAY*2));
+  var yesterday = new Date(now.getTime() - MILLIS_PER_DAY);
+  var timeZone = AdWordsApp.currentAccount().getTimeZone();
+  var start = Utilities.formatDate(dayBeforeYesterday, timeZone, 'yyyyMMdd');
+  var end = Utilities.formatDate(yesterday, timeZone, 'yyyyMMdd');
+  
+  
+  // Get stats for keywords ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  var keywordSelector = AdsApp.keywords()
+  .withCondition('Status = ENABLED')
+  .withCondition('Clicks > ' + minimumClicksRequired)
+  .withCondition('CampaignStatus = ENABLED')
+  .orderBy("AverageCpc DESC")
+  .forDateRange('YESTERDAY')
+  .get();
+  
+  
+  // Choose your table header titles ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  table="<html><body><br><table border=0><tr><th>Keyword</th><th>Campaign</th><th>Avg. CPC</th><th>Avg. CPC Chg. £</th><th>Avg. CPC Chg. %</th></tr>";
+  
+  
+  // Loop through your keywords for their data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  while (keywordSelector.hasNext()) {
+    var keywordList = keywordSelector.next();
+    var keywordText = keywordList.getText();
+    var keywordCampaign = keywordList.getCampaign()
+  
+  	var statsB4 = keywordList.getStatsFor(start,start);
+  	var avgCpcB4 = statsB4.getAverageCpc();
+    
+    var statsAf = keywordList.getStatsFor(end,end);
+    var avgCpcAf = statsAf.getAverageCpc();
+  
+    
+  // Ignore them if there have been no clicks in either dates during the comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    
+    if (avgCpcB4 > 0 && avgCpcAf > 0) {
+      
+      var avgCpcChange = avgCpcAf - avgCpcB4;
+      var avgCpcPercent = ((avgCpcAf / avgCpcB4) * 100)-100;
+            
+      
+  // Add the data to your predefined table ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      
+      table=table+"<tr><td>" + keywordText + "</td><td>" + keywordCampaign + "</td><td>" + avgCpcAf.toFixed(2) + "</td><td>" + avgCpcChange.toFixed(2) + "</td><td>" + avgCpcPercent.toFixed(2) + "</td></tr>";
+    }
+      
+  } 
+
+  
+  // Close your table and send to whoever you wish ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  table=table+"</table></body></html>";
+
+  sendEmail(emailAddress, table);
+
+  function sendEmail(email, body) {
+
+        var subject = "Keyword CPC Changes";
+        Logger.log("Sending email, subject: " + subject);
+
+      MailApp.sendEmail(email, subject, '', { htmlBody: body });
+  }
+
+}
