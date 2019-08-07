@@ -1,0 +1,110 @@
+// Bing doesn't have nearly the same capabilities as Google, so here's a very hacky workaround so you can see
+// daily cpc changes, even with their inability to send emails and export to a csv doc..
+// WARNING: the output is ugly, but readable with a little bit of formatting after copy and pasting
+
+var minimumClicksRequired = 5; // Option to only look at keywords with a certain number of clicks yesterday
+var exclusion = ''; // campaigns you wish to exclude from analysis
+
+function main() {
+  
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Create email functionality part 1 ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  var SENDGRID_API_KEY=''; // get your own from Sendgrid.com and paste in here
+
+  var emailTo = ""; // your own email
+  var subject = "Bing CPC Changes";
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Create your empty arrays for later storage ~~~~~~~~~~~~~~~~
+  var idArray = [];
+  var sense =[];
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Sort the date range out ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  var now = new Date();
+  var yesterday = (now.getDate() - 1)
+  var dayBeforeYesterday = (now.getDate() - 2)
+  var currentMonth = (now.getMonth() +1) // for some reason Bing doesn't know the correct month index number, so we add one...
+  var currentYear = (now.getFullYear())
+  
+  var yesterdayFormatted = {year: currentYear, month: currentMonth, day: yesterday};
+  var twoDayFormatted = {year: currentYear, month: currentMonth, day: dayBeforeYesterday};
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Get the data for yesterday ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  var keywordSelector = AdsApp.keywords()
+  .withCondition('Status = ENABLED')
+  .withCondition('Clicks > ' + minimumClicksRequired)
+  .withCondition('CampaignStatus = ENABLED')
+  .withCondition("CampaignName DOES_NOT_CONTAIN_IGNORE_CASE "+exclusion)
+  .orderBy("AverageCpc DESC")
+  .forDateRange(yesterdayFormatted, yesterdayFormatted)
+  .get();
+
+
+  while (keywordSelector.hasNext()) {
+    var keywordList = keywordSelector.next();
+    var keywordText = keywordList.getText();
+    var keywordCampaign = keywordList.getCampaign(); 
+    
+    idArray.push(keywordText);
+
+    sense.push({ID: keywordText, CPL: keywordList.getStats().getAverageCpc(), DTE: 'yesterday'});
+    
+  }
+
+    // ~~~~~~~~~~~~~~~~~~~ Get the data for the day before yesterday ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  var keywordSelector2 = AdsApp.keywords()
+  .withCondition('Status = ENABLED')
+  .withCondition('CampaignStatus = ENABLED')
+  .withCondition("CampaignName DOES_NOT_CONTAIN_IGNORE_CASE "+exclusion)
+  .orderBy("AverageCpc DESC")
+  .forDateRange(twoDayFormatted, twoDayFormatted)
+  .get();
+
+  while (keywordSelector2.hasNext()) {
+    var keywordList2 = keywordSelector2.next();
+    var keywordText2 = keywordList2.getText();
+    
+    for (var i = 0; i < idArray.length; i++) {
+      if (keywordText2 == idArray[i])
+      sense.push({ID:keywordText2, CPL: keywordList2.getStats().getAverageCpc(), DTE: 'day before yesterday'});
+    }
+
+  }
+
+    function groupBy(xs, f) {
+    return xs.reduce((r, v, i, a, k = f(v)) => ((r[k] || (r[k] = [])).push(v), r), {});
+    }
+
+    var result = groupBy(sense, (c) => c.ID);
+    
+
+    Logger.log(JSON.stringify(result));
+
+    var emailBody = JSON.stringify(result);
+
+    var headers = {
+        "Authorization" : "Bearer "+SENDGRID_API_KEY 
+    }
+
+    
+    var email = {"personalizations": [{"to": [{"email": emailTo}]}],"from": {"email": "sendeexampexample@example.com"},"subject": subject,"content": [{"type": "text/plain", "value": emailBody}]};
+
+    var options = {
+    contentType: 'application/json',    
+    'muteHttpExceptions': true, 
+    'method':'post',
+    'headers':headers,
+    'payload':JSON.stringify(email)
+
+
+  }
+
+    Logger.log(JSON.stringify(options));
+
+    var response = UrlFetchApp.fetch('https://api.sendgrid.com/v3/mail/send', options); 
+    Logger.log(response.getContentText());
+    Logger.log(response.getResponseCode());
+
+}
