@@ -1,0 +1,91 @@
+//~~~~~~~~~~~~~~~~~~~~~~~~
+// This script will iterate through your ads and ad groups with a particular label and
+// return performance data in comparison to those ads within the same ad groups without
+// the label. In order to make this work for your account you may have to edit certain parts
+// of the code as it assumes an ad will only have one label (the one who you wish to measure)
+
+var SPREADSHEET_URL = ''; // the url of the spreadsheet the data should be sent to.
+var SHEET_NAME = 'Sheet1'; // the name of the sheet you wish the data to be sent to.
+var labelSelect = '[""]'; // the label you are wishing to test, insert the name between the quotation marks
+var dateRange = ''; // the date range to look back upon
+var nonLabelled = ""; // the term you wish to refer to 'non-labelled' iterations as in the output.
+
+//~~~~~~~~~~~~~~~~~~~~~~~~
+
+var ss = SpreadsheetApp.openByUrl(SPREADSHEET_URL);
+var sheet = ss.getSheetByName(SHEET_NAME);
+
+function main() {
+  
+  function clearSheetData() {
+    sheet.clearContents();
+  } clearSheetData();
+  
+  function appendColumnHeader() {
+    sheet.appendRow(["Ad Group", "Label", "Impressions", "Clicks", "CTR", "Cost", "Conversions", "Cost per Conversion"]);
+  } appendColumnHeader();
+  
+  var adGroupSelector = AdsApp.adGroups()
+  .withCondition('LabelNames CONTAINS_ANY '+labelSelect)
+  .withCondition('Status = ENABLED')
+  .get();
+  
+  while(adGroupSelector.hasNext()) {
+    var adGroups = adGroupSelector.next();
+    var adGroupName = adGroups.getName();
+    var ads = adGroups.ads()
+    .forDateRange(dateRange)
+    .withCondition('Status = ENABLED')
+    .get();
+    
+    while (ads.hasNext()) {
+      var adIterator = ads.next();
+      var adLabel = adIterator.labels()
+      .orderBy("Name")
+      .get();
+      
+      var labelAmount = adLabel.totalNumEntities();
+      
+      if (labelAmount > 0) {
+      
+      while (adLabel.hasNext()) {
+        var adLadd = adLabel.next();
+        var labelName = adLadd.getName();
+        
+      }} else {
+        
+        var labelName = nonLabelled;
+      
+      }
+      
+      var adImpressions = adIterator.getStatsFor(dateRange).getImpressions();
+      var adClicks = adIterator.getStatsFor(dateRange).getClicks()
+      var adCTR = adClicks/adImpressions;
+      var adCost = adIterator.getStatsFor(dateRange).getCost();
+      var adConv = adIterator.getStatsFor(dateRange).getConversions()
+      var adCostConv = adCost/adConv;
+            
+      function appendARow() {
+
+      sheet.appendRow([adGroupName, labelName, adImpressions, adClicks, adCTR, adCost, adConv, adCostConv]);
+        
+      }
+      
+      appendARow();
+     
+    }
+          
+  }
+  
+  function insertImageOnSpreadsheet() {
+
+  var response = UrlFetchApp.fetch(
+      'https://i.kym-cdn.com/photos/images/newsfeed/001/499/826/2f0.png');
+  var binaryData = response.getContent();
+
+  var blob = Utilities.newBlob(binaryData, 'image/png', 'MyImageName');
+  sheet.insertImage(blob, 9, 1);
+    
+  } insertImageOnSpreadsheet();
+  
+}
